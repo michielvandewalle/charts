@@ -39,7 +39,7 @@ export class AppComponent implements OnInit {
         .rangeRound([height, 0]);
 
     //------------------------DATA PREPARATION-----------------------//
-    var dataset = d3.csv("../assets/data/barchart.csv");
+    var dataset = d3.csv("./assets/data/barchart.csv");
     dataset.then(function(data) {
         data.map(function(d) {
                 d.val = +d.val;
@@ -104,7 +104,7 @@ export class AppComponent implements OnInit {
     
     //-----------------------------DATA-----------------------------//
     const timeConv = d3.timeParse("%d-%b-%Y");
-    const dataset = d3.csv("../assets/data/linechart.csv");
+    const dataset = d3.csv("./assets/data/linechart.csv");
     dataset.then(function(data) {
         var slices = data.columns.slice(1).map(function(id) {
             return {
