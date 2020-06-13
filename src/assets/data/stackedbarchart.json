@@ -7,7 +7,7 @@
   {
     "conference_name": "D3 for Dummies",
     "tickets_sold": 250,
-    "tickets_available": "300"
+    "tickets_available": 300
   },
   {
     "conference_name": "Python for People",

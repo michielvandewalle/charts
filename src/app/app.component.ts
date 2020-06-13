@@ -355,10 +355,21 @@ export class AppComponent implements OnInit {
     const TEXT_OFFSET = 18;
     const LABEL_OFFSET = 30;
     const QUANTITY_OFFSET = 30;
+
+    const width = 600
+    const height = 240
+    const adj = 0;
+
     
     d3.json("./assets/data/stackedbarchart.csv").then(data => {
       d3.select("div#stackedbarchart")
         .append("svg")
+        .attr("preserveAspectRatio", "xMinYMin meet")
+        .attr("viewBox", "-"
+              + adj + " -"
+              + adj + " "
+              + (width + adj *3) + " "
+              + (height + adj*3))    
         .selectAll("rect")
         .data(data)
         .enter()
@@ -368,6 +379,7 @@ export class AppComponent implements OnInit {
         .attr("y", (val, idx) => idx * BAR_SPACING)
         .attr("width", (val, idx) => val.tickets_sold)
         .attr("fill", "green");
+
       d3.select("svg")
         .selectAll("text")
         .data(data)
