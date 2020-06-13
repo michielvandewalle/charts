@@ -6,7 +6,7 @@
     "start": "ng serve",
     "deploy": "npm run clean && npm run build",
     "clean": "rimraf ./dist",
-    "build": "ng build --prod",
+    "build": "ng build --prod --base-href /d3-charts/",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
