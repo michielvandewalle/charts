@@ -1,0 +1,17 @@
+[
+  {
+    "conference_name": "Joy of JavaScript",
+    "tickets_sold": 100,
+    "tickets_available": 125
+  },
+  {
+    "conference_name": "D3 for Dummies",
+    "tickets_sold": 250,
+    "tickets_available": "300"
+  },
+  {
+    "conference_name": "Python for People",
+    "tickets_sold": 500,
+    "tickets_available": 550
+  }
+]

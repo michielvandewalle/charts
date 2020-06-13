@@ -13,6 +13,7 @@ export class AppComponent implements OnInit {
     this.barChart();
     this.lineChart();
     this.donutChart();
+    this.stackedBarChart();
     
   }
 
@@ -346,5 +347,65 @@ export class AppComponent implements OnInit {
         return (midangle < Math.PI ? 'start' : 'end')
     })
 
+  }
+
+  private stackedBarChart(): void {
+    const BAR_HEIGHT = 50;
+    const BAR_SPACING = 85;
+    const TEXT_OFFSET = 18;
+    const LABEL_OFFSET = 30;
+    const QUANTITY_OFFSET = 30;
+    
+    d3.json("./assets/data/stackedbarchart.csv").then(data => {
+      d3.select("div#stackedbarchart")
+        .append("svg")
+        .selectAll("rect")
+        .data(data)
+        .enter()
+        .append("rect")
+        .attr("x", 0)
+        .attr("height", BAR_HEIGHT)
+        .attr("y", (val, idx) => idx * BAR_SPACING)
+        .attr("width", (val, idx) => val.tickets_sold)
+        .attr("fill", "green");
+      d3.select("svg")
+        .selectAll("text")
+        .data(data)
+        .enter()
+        .append("text")
+        .attr("x", 0)
+        .attr("y", (val, idx) => idx * BAR_SPACING + BAR_HEIGHT + TEXT_OFFSET)
+        .attr("fill", "black")
+        .attr("font-size", "18px")
+        .text(
+          (val, idx) =>
+            `${val.conference_name} - ${Math.round(
+              (val.tickets_sold / val.tickets_available) * 100
+            )}%`
+        );
+      d3.select("div#stackedbarchart svg")      
+        .selectAll("rect#diffs")
+        .data(data)
+        .enter()
+        .append("rect")
+        .attr("x", (val, idx) => val.tickets_sold)
+        .attr("y", (val, idx) => idx * BAR_SPACING)
+        .attr("height", BAR_HEIGHT)
+        .attr("width", (val, idx) =>
+          Math.abs(val.tickets_sold - val.tickets_available)
+        )
+        .attr("fill", "red");
+
+    d3.select("div#stackedbarchart svg")      
+        .selectAll("text.labels")
+        .data(data)
+        .enter()
+        .append("text")
+        .attr("x", (val, idx) => val.tickets_sold - QUANTITY_OFFSET)
+        .attr("y", (val, idx) => idx * BAR_SPACING + LABEL_OFFSET)
+        .attr("fill", "white")
+        .attr("font-size", "12")
+        .text((val, idx) => `${val.tickets_sold}`);
+    });    
   }
 }
