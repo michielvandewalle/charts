@@ -10,88 +10,211 @@ export class AppComponent implements OnInit {
 
   public ngOnInit(): void {
     this.barChart();
-    this.lineChart();
-    this.donutChart();
     this.stackedBarChart();
+    this.donutChart();
+    this.lineChart();
+    this.lineareaChart();
   }
 
   private barChart(): void {
-    var width = 960;
-    var height = 500;
-    var margin = 5;
-    var padding = 5;
-    var adj = 20;
+    // set the dimensions and margins of the graph
+    const width = 960;
+    const height = 500;
+    const margin = 5;
+    const padding = 5;
+    const adj = 30;
+
     // we are appending SVG first
-    var svg = d3
+    const svg = d3
       .select("div#barchart")
       .append("svg")
       .attr("preserveAspectRatio", "xMinYMin meet")
-      //.attr("viewBox", "-20 -20 1600 1600")
       .attr(
         "viewBox",
-        "-" + adj + " -" + adj + " " + (width + adj) + " " + (height + adj * 2)
+        "-" +
+          adj +
+          " -" +
+          adj +
+          " " +
+          (width + adj * 3) +
+          " " +
+          (height + adj * 3)
       )
       .style("padding", padding)
       .style("margin", margin)
       .classed("svg-content", true);
 
-    //-----------------------SCALES PREPARATION----------------------//
-    var xScale = d3.scaleBand().rangeRound([0, width]).paddingInner(0.05);
-    var yScale = d3.scaleLinear().rangeRound([height, 0]);
-
-    //------------------------DATA PREPARATION-----------------------//
-    var dataset = d3.csv("./assets/data/barchart.csv");
+    // Parse the Data
+    const dataset = d3.csv("./assets/data/barchart.csv");
     dataset.then(function (data) {
-      data.map(function (d) {
-        d.val = +d.val;
-        return d;
-      });
-    });
-
-    dataset.then(function (data) {
-      xScale.domain(
-        data.map(function (d) {
-          return d.cat;
-        })
-      );
-      yScale.domain([
-        0,
-        d3.max(data, function (d) {
-          return d.val;
-        }),
-      ]);
-    });
-
-    console.log(dataset);
-
-    //----------------------------DRAWING----------------------------//
-    //-----------------------------AXES------------------------------//
-    svg
-      .append("g")
-      .attr("class", "axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(xScale));
-
-    svg.append("g").attr("class", "axis").call(d3.axisLeft(yScale));
-
-    //-----------------------------BARS------------------------------//
-    dataset.then(function (data) {
+      // X axis
+      var x = d3
+        .scaleBand()
+        .range([0, width])
+        .domain(
+          data.map(function (d) {
+            return d.Country;
+          })
+        )
+        .padding(0.2);
       svg
-        .selectAll("div")
+        .append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+        .attr("transform", "translate(-10,0)rotate(-45)")
+        .style("text-anchor", "end");
+
+      // Add Y axis
+      var y = d3.scaleLinear().domain([0, 13000]).range([height, 0]);
+      svg.append("g").call(d3.axisLeft(y));
+
+      // Bars
+      svg
+        .selectAll("mybar")
         .data(data)
         .enter()
         .append("rect")
-        .attr("class", "bar")
         .attr("x", function (d) {
-          return xScale(d.cat);
+          return x(d.Country);
         })
         .attr("y", function (d) {
-          return yScale(d.val);
+          return y(d.Value);
         })
-        .attr("width", xScale.bandwidth())
+        .attr("width", x.bandwidth())
         .attr("height", function (d) {
-          return height - yScale(d.val);
-        });
+          return height - y(d.Value);
+        })
+        .attr("fill", "#69b3a2");
+    });
+  }
+
+  private stackedBarChart(): void {
+    // set the dimensions and margins of the graph
+    const width = 960;
+    const height = 500;
+    const margin = 5;
+    const padding = 5;
+    const adj = 30;
+
+    // we are appending SVG first
+    const svg = d3
+      .select("div#barchart")
+      .append("svg")
+      .attr("preserveAspectRatio", "xMinYMin meet")
+      .attr(
+        "viewBox",
+        "-" +
+          adj +
+          " -" +
+          adj +
+          " " +
+          (width + adj * 3) +
+          " " +
+          (height + adj * 3)
+      )
+      .style("padding", padding)
+      .style("margin", margin)
+      .classed("svg-content", true);
+
+    // Parse the Data
+    const dataset = d3.csv("./assets/data/stackedbarchart.csv");
+    dataset.then(function (data) {
+      // List of subgroups = header of the csv files = soil condition here
+      var subgroups = data.columns.slice(1);
+
+      // List of groups = species here = value of the first column called group -> I show them on the X axis
+      var groups = d3
+        .map(data, function (d) {
+          return d.group;
+        })
+        .keys();
+
+      // Add X axis
+      var x = d3.scaleBand().domain(groups).range([0, width]).padding([0.2]);
+      svg
+        .append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).tickSizeOuter(0));
+
+      // Add Y axis
+      var y = d3.scaleLinear().domain([0, 60]).range([height, 0]);
+      svg.append("g").call(d3.axisLeft(y));
+
+      // color palette = one color per subgroup
+      var color = d3
+        .scaleOrdinal()
+        .domain(subgroups)
+        .range(["#C7EFCF", "#FE5F55", "#EEF5DB"]);
+
+      //stack the data? --> stack per subgroup
+      var stackedData = d3.stack().keys(subgroups)(data);
+
+      // ----------------
+      // Create a tooltip
+      // ----------------
+      var tooltip = d3
+        .select("#my_dataviz")
+        .append("div")
+        .style("opacity", 0)
+        .attr("class", "tooltip")
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "1px")
+        .style("border-radius", "5px")
+        .style("padding", "10px");
+
+      // Three function that change the tooltip when user hover / move / leave a cell
+      var mouseover = function (d) {
+        var subgroupName = d3.select(this.parentNode).datum().key;
+        var subgroupValue = d.data[subgroupName];
+        tooltip
+          .html(
+            "subgroup: " + subgroupName + "<br>" + "Value: " + subgroupValue
+          )
+          .style("opacity", 1);
+      };
+      var mousemove = function (d) {
+        tooltip
+          .style("left", d3.mouse(this)[0] + 90 + "px") // It is important to put the +90: other wise the tooltip is exactly where the point is an it creates a weird effect
+          .style("top", d3.mouse(this)[1] + "px");
+      };
+      var mouseleave = function (d) {
+        tooltip.style("opacity", 0);
+      };
+
+      // Show the bars
+      svg
+        .append("g")
+        .selectAll("g")
+        // Enter in the stack data = loop key per key = group per group
+        .data(stackedData)
+        .enter()
+        .append("g")
+        .attr("fill", function (d) {
+          return color(d.key);
+        })
+        .selectAll("rect")
+        // enter a second time = loop subgroup per subgroup to add all rectangles
+        .data(function (d) {
+          return d;
+        })
+        .enter()
+        .append("rect")
+        .attr("x", function (d) {
+          return x(d.data.group);
+        })
+        .attr("y", function (d) {
+          return y(d[1]);
+        })
+        .attr("height", function (d) {
+          return y(d[0]) - y(d[1]);
+        })
+        .attr("width", x.bandwidth())
+        .attr("stroke", "grey")
+        .on("mouseover", mouseover)
+        .on("mousemove", mousemove)
+        .on("mouseleave", mouseleave);
     });
   }
 
@@ -306,6 +429,147 @@ export class AppComponent implements OnInit {
     });
   }
 
+  private lineareaChart(): void {
+    // // set the dimensions and margins of the graph
+    var width = 960;
+    var height = 500;
+    var margin = 5;
+    var padding = 5;
+    var adj = 20;
+
+    // // append the svg object to the body of the page
+    // const svg = d3
+    //   .select("#my_dataviz")
+    //   .append("svg")
+    //   .attr("width", width + margin.left + margin.right)
+    //   .attr("height", height + margin.top + margin.bottom)
+    //   .append("g")
+    //   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    const svg = d3
+      .select("div#lineareachart")
+      .append("svg")
+      .attr("preserveAspectRatio", "xMinYMin meet")
+      .attr(
+        "viewBox",
+        "-" + adj + " -" + adj + " " + (width + adj) + " " + (height + adj * 2)
+      )
+      .style("padding", padding)
+      .style("margin", margin)
+      .classed("svg-content", true);
+
+    // //Read the data
+    const dataset = d3.csv("./assets/data/lineareachart.csv");
+    dataset.then((data) => {
+      console.log(data);
+      // Add X axis --> it is a date format
+      var x = d3.scaleLinear().domain([1, 100]).range([0, width]);
+      svg
+        .append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+
+      // Add Y axis
+      var y = d3.scaleLinear().domain([0, 13]).range([height, 0]);
+      svg.append("g").call(d3.axisLeft(y));
+
+      // This allows to find the closest X index of the mouse:
+      var bisect = d3.bisector(function (d) {
+        return d.x;
+      }).left;
+
+      // Show confidence interval
+      svg
+        .append("path")
+        .datum(data)
+        .attr("fill", "#cce5df")
+        .attr("stroke", "none")
+        .attr(
+          "d",
+          d3
+            .area()
+            .x(function (d) {
+              return x(d.x);
+            })
+            .y0(function (d) {
+              return y(d.CI_right);
+            })
+            .y1(function (d) {
+              return y(d.CI_left);
+            })
+        );
+
+      // Create the circle that travels along the curve of chart
+      var focus = svg
+        .append("g")
+        .append("circle")
+        .style("fill", "none")
+        .attr("stroke", "black")
+        .attr("r", 8.5)
+        .style("opacity", 0);
+
+      // Create the text that travels along the curve of chart
+      var focusText = svg
+        .append("g")
+        .append("text")
+        .style("opacity", 0)
+        .attr("text-anchor", "left")
+        .attr("alignment-baseline", "middle");
+
+      // Add the line
+      svg
+        .append("path")
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 1.5)
+        .attr(
+          "d",
+          d3
+            .line()
+            .x(function (d) {
+              return x(d.x);
+            })
+            .y(function (d) {
+              return y(d.y);
+            })
+        );
+
+      // Create a rect on top of the svg area: this rectangle recovers mouse position
+      svg
+        .append("rect")
+        .style("fill", "none")
+        .style("pointer-events", "all")
+        .attr("width", width)
+        .attr("height", height)
+        .on("mouseover", mouseover)
+        .on("mousemove", mousemove)
+        .on("mouseout", mouseout);
+
+      // What happens when the mouse move -> show the annotations at the right positions.
+      function mouseover() {
+        focus.style("opacity", 1);
+        focusText.style("opacity", 1);
+      }
+
+      function mousemove() {
+        // recover coordinate we need
+        var x0 = x.invert(d3.mouse(this)[0]);
+        var i = bisect(data, x0, 1);
+        const selectedData = data[i];
+        focus.attr("cx", x(selectedData.x)).attr("cy", y(selectedData.y));
+        focusText
+          .html("x:" + selectedData.x + "  -  " + "y:" + selectedData.y)
+          .attr("x", x(selectedData.x) + 15)
+          .attr("y", y(selectedData.y));
+      }
+      function mouseout() {
+        focus.style("opacity", 0);
+        focusText.style("opacity", 0);
+      }
+    });
+  }
+
   public donutChart(): void {
     // set the dimensions and margins of the graph
     const width = 450;
@@ -416,146 +680,5 @@ export class AppComponent implements OnInit {
         var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
         return midangle < Math.PI ? "start" : "end";
       });
-  }
-
-  private stackedBarChart(): void {
-    // // set the dimensions and margins of the graph
-    var width = 960;
-    var height = 500;
-    var margin = 5;
-    var padding = 5;
-    var adj = 20;
-
-    // // append the svg object to the body of the page
-    // const svg = d3
-    //   .select("#my_dataviz")
-    //   .append("svg")
-    //   .attr("width", width + margin.left + margin.right)
-    //   .attr("height", height + margin.top + margin.bottom)
-    //   .append("g")
-    //   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    const svg = d3
-      .select("div#stackedbarchart")
-      .append("svg")
-      .attr("preserveAspectRatio", "xMinYMin meet")
-      .attr(
-        "viewBox",
-        "-" + adj + " -" + adj + " " + (width + adj) + " " + (height + adj * 2)
-      )
-      .style("padding", padding)
-      .style("margin", margin)
-      .classed("svg-content", true);
-
-    // //Read the data
-    const dataset = d3.csv("./assets/data/data_IC.csv");
-    dataset.then((data) => {
-      console.log(data);
-      // Add X axis --> it is a date format
-      var x = d3.scaleLinear().domain([1, 100]).range([0, width]);
-      svg
-        .append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
-
-      // Add Y axis
-      var y = d3.scaleLinear().domain([0, 13]).range([height, 0]);
-      svg.append("g").call(d3.axisLeft(y));
-
-      // This allows to find the closest X index of the mouse:
-      var bisect = d3.bisector(function (d) {
-        return d.x;
-      }).left;
-
-      // Show confidence interval
-      svg
-        .append("path")
-        .datum(data)
-        .attr("fill", "#cce5df")
-        .attr("stroke", "none")
-        .attr(
-          "d",
-          d3
-            .area()
-            .x(function (d) {
-              return x(d.x);
-            })
-            .y0(function (d) {
-              return y(d.CI_right);
-            })
-            .y1(function (d) {
-              return y(d.CI_left);
-            })
-        );
-
-      // Create the circle that travels along the curve of chart
-      var focus = svg
-        .append("g")
-        .append("circle")
-        .style("fill", "none")
-        .attr("stroke", "black")
-        .attr("r", 8.5)
-        .style("opacity", 0);
-
-      // Create the text that travels along the curve of chart
-      var focusText = svg
-        .append("g")
-        .append("text")
-        .style("opacity", 0)
-        .attr("text-anchor", "left")
-        .attr("alignment-baseline", "middle");
-
-      // Add the line
-      svg
-        .append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 1.5)
-        .attr(
-          "d",
-          d3
-            .line()
-            .x(function (d) {
-              return x(d.x);
-            })
-            .y(function (d) {
-              return y(d.y);
-            })
-        );
-
-      // Create a rect on top of the svg area: this rectangle recovers mouse position
-      svg
-        .append("rect")
-        .style("fill", "none")
-        .style("pointer-events", "all")
-        .attr("width", width)
-        .attr("height", height)
-        .on("mouseover", mouseover)
-        .on("mousemove", mousemove)
-        .on("mouseout", mouseout);
-
-      // What happens when the mouse move -> show the annotations at the right positions.
-      function mouseover() {
-        focus.style("opacity", 1);
-        focusText.style("opacity", 1);
-      }
-
-      function mousemove() {
-        // recover coordinate we need
-        var x0 = x.invert(d3.mouse(this)[0]);
-        var i = bisect(data, x0, 1);
-        const selectedData = data[i];
-        focus.attr("cx", x(selectedData.x)).attr("cy", y(selectedData.y));
-        focusText
-          .html("x:" + selectedData.x + "  -  " + "y:" + selectedData.y)
-          .attr("x", x(selectedData.x) + 15)
-          .attr("y", y(selectedData.y));
-      }
-      function mouseout() {
-        focus.style("opacity", 0);
-        focusText.style("opacity", 0);
-      }
-    });
   }
 }
